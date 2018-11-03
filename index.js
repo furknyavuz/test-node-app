@@ -3,7 +3,7 @@ const path = require('path');
 const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 
@@ -17,7 +17,7 @@ app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
 passport.use(new GitHubStrategy({
         clientID: '50ffe15b2d80064892ce',
         clientSecret: 'd8f30682e806cf5bd72423da2b184f93ee5384f0',
-        callbackURL: 'http://127.0.0.1:3000/auth/github/callback'
+        callbackURL: 'https://node-js-test-login.herokuapp.com/auth/github/callback'
     },
     function (accessToken, refreshToken, profile, done) {
         console.log('Gathered access token: ' + accessToken);
