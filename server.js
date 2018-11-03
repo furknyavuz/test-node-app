@@ -1,6 +1,18 @@
 const express = require('express');
+const path = require('path');
 const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
+
+const PORT = process.env.PORT || 3000
+
+const app = express();
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(passport.initialize());
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+app.get('/', (req, res) => res.render('home'));
+app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
 
 passport.use(new GitHubStrategy({
         clientID: '50ffe15b2d80064892ce',
@@ -12,23 +24,6 @@ passport.use(new GitHubStrategy({
         return done(null, profile);
     }
 ));
-
-const app = express();
-
-app.set('views', __dirname + '/views');
-app.set('view engine', 'ejs');
-
-app.use(require('morgan')('combined'));
-app.use(require('cookie-parser')());
-app.use(require('body-parser').urlencoded({extended: true}));
-
-app.use(passport.initialize());
-
-app.get('/',
-    function (req, res) {
-        res.render('home', {user: req.user});
-    }
-);
 
 app.get('/login',
     function (req, res) {
@@ -47,5 +42,3 @@ app.get('/auth/github/callback',
         res.render('profile', {user: req.user});
     }
 );
-
-app.listen(3000);
