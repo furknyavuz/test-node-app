@@ -1,6 +1,6 @@
-const express = require('express');
 const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
+const express = require('express');
 
 passport.use(new GitHubStrategy({
         clientID: '50ffe15b2d80064892ce',
@@ -30,7 +30,6 @@ app.set('view engine', 'ejs');
 app.use(require('morgan')('combined'));
 app.use(require('cookie-parser')());
 app.use(require('body-parser').urlencoded({extended: true}));
-app.use(require('express-session')({secret: 'keyboard cat', resave: true, saveUninitialized: true}));
 
 app.use(passport.initialize());
 app.use(passport.session());
