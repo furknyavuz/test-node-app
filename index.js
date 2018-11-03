@@ -21,7 +21,7 @@ passport.use(new GitHubStrategy({
     },
     function (accessToken, refreshToken, profile, done) {
         console.log('Gathered access token: ' + accessToken);
-        return done(null, profile);
+        return done(null, accessToken);
     }
 ));
 
@@ -32,13 +32,21 @@ app.get('/login',
 );
 
 app.get('/auth/github',
-    passport.authenticate('github', {scope: ['user:email']})
+    middlewareLog, passport.authenticate('github', {scope: ['user:email']})
 );
 
 app.get('/auth/github/callback',
-    passport.authenticate('github', {failureRedirect: '/login', session: false }),
+    passport.authenticate('github', {failureRedirect: '/login', session: false}),
     function (req, res) {
-        console.log('Gathered user: ' + req.user.username);
-        res.render('profile', {user: req.user});
+        console.log("after callback: " + app.locals.linkingUri);
+        res.redirect(app.locals.linkingUri + '?accessToken=' + req.user);
     }
 );
+
+function middlewareLog(req, res, next) {
+    if (req.query.linkingUri) {
+        console.log("before callback: " + req.query.linkingUri);
+        app.locals.linkingUri = req.query.linkingUri;
+    }
+    next();
+}
