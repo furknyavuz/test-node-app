@@ -2,62 +2,70 @@
 
 const request = require('request');
 const mongoose = require('mongoose');
+
+const GITHUB_API_USER = 'https://api.github.com/user';
+
 let User = mongoose.model('User');
 
-exports.inhale_user = function (req, res) {
-    console.log(req.params.token);
+function findOneAndUpdateByDbId(db_id, github, token, client_res) {
+    User.findOneAndUpdate({_id: db_id}, {
+        github: github,
+        github_token: token
+    }, {new: true}, function (db_err, updated_user) {
+        if (!db_err) {
+            client_res.json(updated_user);
+        } else {
+            console.log(db_err);
+            client_res.send(500, db_err);
+        }
+    });
+}
+
+function findOneAndUpdateByGithubId(github, token, client_res) {
+    User.findOneAndUpdate({github_id: github.id}, {github: github, github_token: token}, {
+        new: true,
+        upsert: true
+    }, function (db_err, updated_user) {
+        if (!db_err) {
+            client_res.json(updated_user);
+        } else {
+            console.log(db_err);
+            client_res.send(500, db_err);
+        }
+    });
+}
+
+exports.inhale_user = function (client_req, client_res) {
+    if (!client_req.params.token) {
+        client_res.send(403, 'Token required');
+    }
+
+    let db_id = client_req.query.id;
+    let token = client_req.params.token;
+    let bearer = `Bearer ${token}`;
 
     let options = {
-        url: 'https://api.github.com/user',
+        url: GITHUB_API_USER,
         headers: {
-            'Authorization': 'Bearer ' + req.params.token,
+            'Authorization': bearer,
             'Content-Type': 'application/json',
             'User-Agent': 'Business Card App'
         }
     };
 
-    request(options, (err, inhale_res, body) => {
-        if (!err && inhale_res.statusCode === 200) {
-            let new_user = new User();
-            new_user.github = JSON.parse(body);
-            new_user.markModified('github');
-            new_user.save(function (err, user) {
-                if (!err) {
-                    res.json(user);
-                } else {
-                    res.send(err);
-                }
-            });
+    request(options, (inhale_err, inhale_res, inhale_body) => {
+        if (!inhale_err && inhale_res.statusCode === 200) {
+
+            let github = JSON.parse(inhale_body);
+
+            if (db_id) {
+                findOneAndUpdateByDbId(db_id, github, token, client_res);
+            } else {
+                findOneAndUpdateByGithubId(github, token, client_res);
+            }
         } else {
-            res.send(err);
+            console.log(inhale_err);
+            client_res.send(inhale_res.statusCode, inhale_err);
         }
     });
 };
-
-exports.create_a_user = function (req, res) {
-    let new_user = new User();
-    new_user.github = req.body;
-    new_user.markModified('github');
-    new_user.save(function (err, user) {
-        if (err)
-            res.send(err);
-        res.json(user);
-    });
-};
-
-exports.read_a_user = function (req, res) {
-    User.findById(req.params.userId, function (err, task) {
-        if (err)
-            res.send(err);
-        res.json(task);
-    });
-};
-
-exports.update_a_user = function (req, res) {
-    User.findOneAndUpdate({_id: req.params.userId}, {github: req.body}, {new: true}, function (err, task) {
-        if (err)
-            res.send(err);
-        res.json(task);
-    });
-};
-
